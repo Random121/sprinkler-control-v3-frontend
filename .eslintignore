@@ -1,0 +1,4 @@
+src-template/
+node_modules/
+
+.gitignore
