@@ -1,10 +1,9 @@
 <template>
-    <div class="input-container">
+    <div class="text-input">
         <input
             type="text"
-            class="input-textbox"
+            class="text-input__input"
             :disabled="disabled"
-            :maxlength="maxlength"
             v-model="text"
             v-bind="$attrs"
             @input="$emit('update:modelValue', text, $event)"
@@ -12,23 +11,22 @@
         <button
             class="clear-button"
             :disabled="disabled"
-            v-show="textLength > 0"
+            v-show="text.length > 0"
             @click="clearText($event)"
         >
-            <div class="clear-icon"></div>
+            <div class="clear-button__icon"></div>
         </button>
     </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
+import { toREM } from "@/utils/style.js";
 
 interface Props {
     width?: number;
     height?: number;
-
-    disabled?: boolean;
-    maxlength?: number;
+    borderWidth?: number;
 
     bgHexColor?: string;
     accentHexColor?: string;
@@ -37,8 +35,7 @@ interface Props {
     clearButtonSize?: number;
     clearButtonMargin?: number;
 
-    borderWidth?: number;
-
+    disabled?: boolean;
     modelValue?: string;
 }
 
@@ -47,40 +44,30 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    width: 180,
-    height: 35,
-
-    disabled: false,
+    width: 180 / 15,
+    height: 35 / 15,
+    borderWidth: 1 / 15,
 
     bgHexColor: "#202225",
     accentHexColor: "#dda900",
     textHexColor: "#dcddde",
 
-    clearButtonSize: 10,
-    clearButtonMargin: 1,
+    clearButtonSize: 10 / 15,
+    clearButtonMargin: 1 / 10,
 
-    borderWidth: 1,
-
+    disabled: false,
     modelValue: "",
 });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const emit = defineEmits<Emits>();
 
 const text = ref(props.modelValue);
-const textLength = computed(() => text.value.length);
 
 // parent to child binding
 watch(
     () => props.modelValue,
-    (newText) => {
-        text.value = newText;
-    }
+    (newText) => (text.value = newText)
 );
-
-function toPixels(value: number): string {
-    return `${value}px`;
-}
 
 function clearText(event: Event) {
     if (props.disabled) {
@@ -93,7 +80,7 @@ function clearText(event: Event) {
 </script>
 
 <style scoped>
-.input-container {
+.text-input {
     display: inline-flex;
     align-items: center;
 
@@ -101,24 +88,25 @@ function clearText(event: Event) {
     padding-left: 5px;
     padding-right: 5px;
 
-    border: v-bind("toPixels(borderWidth)") solid v-bind("accentHexColor");
+    width: v-bind("toREM(width)");
+    height: v-bind("toREM(height)");
+
+    border: v-bind("toREM(borderWidth)") solid v-bind("accentHexColor");
     border-radius: 2px;
 
     background-color: v-bind("bgHexColor");
-
-    width: v-bind("toPixels(width)");
-    height: v-bind("toPixels(height)");
 }
 
-.input-container:focus-within {
-    /* glow around textbox when user is interacting */
+/* glow around textbox when user is interacting */
+.text-input:focus-within {
     box-shadow: 0 0 3px 0 v-bind("accentHexColor");
 }
 
-.input-textbox {
-    padding: 0;
+.text-input__input {
     outline: none;
     border: none;
+
+    padding: 0;
 
     /* make it fill all free space */
     width: 100%;
@@ -128,25 +116,24 @@ function clearText(event: Event) {
     color: v-bind("textHexColor");
 }
 
-.input-textbox:disabled {
+.text-input__input:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
 
 .clear-button {
     display: inline-flex;
+    border: none;
+    appearance: none;
 
     /* prevent button from shrinking when the textbox expands */
     flex-shrink: 0;
 
-    width: v-bind("toPixels(clearButtonSize)");
-    height: v-bind("toPixels(clearButtonSize)");
+    width: v-bind("toREM(clearButtonSize)");
+    height: v-bind("toREM(clearButtonSize)");
 
     padding: 0;
-    margin: v-bind("toPixels(clearButtonMargin)");
-
-    border: none;
-    appearance: none;
+    margin: v-bind("toREM(clearButtonMargin)");
 
     background-color: transparent;
     cursor: pointer;
@@ -156,7 +143,7 @@ function clearText(event: Event) {
     cursor: not-allowed;
 }
 
-.clear-icon {
+.clear-button__icon {
     display: inline-flex;
 
     /* center the cross inside the button */
@@ -165,26 +152,26 @@ function clearText(event: Event) {
 
     width: 100%;
     height: 100%;
+
     opacity: 0.6;
 }
 
-/* create two bars to make the cross */
-.clear-icon:before,
-.clear-icon:after {
+.clear-button__icon::before,
+.clear-button__icon::after {
     content: "";
     position: absolute;
 
-    height: v-bind("toPixels(clearButtonSize)");
     width: 1px;
+    height: v-bind("toREM(clearButtonSize)");
 
     background-color: #fff;
 }
 
 /* rotate the bar to make a cross */
-.clear-icon:before {
+.clear-button__icon:before {
     transform: rotate(45deg);
 }
-.clear-icon:after {
+.clear-button__icon:after {
     transform: rotate(-45deg);
 }
 </style>

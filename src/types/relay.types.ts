@@ -1,13 +1,13 @@
-export interface IRelayState {
+export type RelayState = {
     is_active: boolean;
     duration: number | null;
     time_remaining: number | null;
     time_elapsed: number | null;
 }
 
-export interface IRelayInfo {
+export type RelayInformation = {
     id: string;
     pin: number;
     name: string;
-    state: IRelayState;
+    state: RelayState;
 }

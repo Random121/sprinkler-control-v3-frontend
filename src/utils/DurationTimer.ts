@@ -12,7 +12,7 @@ export class DurationTimer {
 
     intervalId: number | undefined;
 
-    constructor(duration: number, tickInterval = 1, autoStart = false) {
+    constructor(duration: number, tickInterval = 0.5, autoStart = false) {
         this.duration = duration;
         this.remaining = duration;
         this.tickInterval = tickInterval;

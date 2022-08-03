@@ -3,7 +3,8 @@ import { io as SocketIOClient } from "socket.io-client";
 
 import App from "./App.vue";
 
-const SERVER_HOST = `http://${document.getElementById("info")?.dataset.host}:42488`;
+const SERVER_HOST = `http://192.168.0.27:42488`;
+// const SERVER_HOST = `http://${document.getElementById("info")?.dataset.host}:42488`;
 
 const API_VERSION = "v1";
 const SOCKETIO_VERSION = "v1";
@@ -18,7 +19,7 @@ const socketioClient = SocketIOClient(SOCKETIO_UPDATE_ENDPOINT, {
 
 const app = createApp(App);
 
-app.provide("API_RELAYS_ENDPOINT", RELAYS_API_ENDPOINT);
+app.provide("RELAYS_API_ENDPOINT", RELAYS_API_ENDPOINT);
 app.provide("UPDATE_SOCKETIO_CLIENT", socketioClient);
 
 app.mount("#app");

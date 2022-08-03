@@ -1,16 +1,16 @@
 <template>
-    <div class="info-container">
-        <span class="name-info">{{ info.name }}</span>
-        <div class="additional-info">
+    <div class="info-display">
+        <span class="info-display__name">{{ relayInfo.name }}</span>
+        <div class="relay-info">
             <!-- time information -->
-            <div class="info-group">
+            <div class="relay-info__group">
                 <span>Duration: {{ durationFormatted }}</span>
-                <span>Remaining: {{ remainingFormatted }}</span>
+                <span>Remaining: {{ remainingTimeFormatted }}</span>
             </div>
             <!-- relay information -->
-            <div class="info-group">
-                <span>Pin: {{ info.pin }}</span>
-                <span>ID: {{ info.id }}</span>
+            <div class="relay-info__group">
+                <span>Pin: {{ relayInfo.pin }}</span>
+                <span>ID: {{relayInfo.id }}</span>
             </div>
         </div>
     </div>
@@ -19,23 +19,25 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { computed, ref, watch, watchEffect } from "vue";
+import { computed, ref, watch } from "vue";
 
-import type { IRelayInfo } from "@/app.types";
-import { DurationTimer } from "@/DurationTimer";
+import { DurationTimer } from "@/utils/DurationTimer.js";
+import type { RelayInformation } from "@/types/relay.types";
 
 dayjs.extend(duration);
 
 interface Props {
-    info: IRelayInfo;
+    relayInfo: RelayInformation;
 }
 
 const props = defineProps<Props>();
 
-const durationFormatted = computed(() => formatTime(props.info.state.duration));
+const durationFormatted = computed(() =>
+    formatTime(props.relayInfo.state.duration)
+);
 
-const remainingTime = ref(props.info.state.time_remaining);
-const remainingFormatted = computed(() => formatTime(remainingTime.value));
+const remainingTime = ref(props.relayInfo.state.time_remaining);
+const remainingTimeFormatted = computed(() => formatTime(remainingTime.value));
 
 const durationTimer = new DurationTimer(remainingTime.value ?? 0);
 
@@ -44,19 +46,13 @@ durationTimer.setTickCallback((duration, remaining) => {
 });
 
 watch(
-    () => props.info.state.time_remaining,
+    () => props.relayInfo.state.time_remaining,
     (newRemaining) => {
         const remaining = Math.ceil(newRemaining ?? 0);
-        remainingTime.value =remaining;
+        remainingTime.value = remaining;
         durationTimer.setDuration(remaining);
     }
 );
-
-watchEffect(() => {
-    props.info.state.is_active
-        ? durationTimer.start()
-        : durationTimer.end();
-});
 
 function formatTime(seconds: number | null): string {
     const milliseconds = (seconds ?? 0) * 1000;
@@ -65,34 +61,35 @@ function formatTime(seconds: number | null): string {
 </script>
 
 <style scoped>
-.info-container {
+.info-display {
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
+    flex-direction: column;
 
     row-gap: 0.25em;
 }
 
-.name-info {
+.info-display__name {
     color: white;
     font-size: 1.75em;
 }
 
-.additional-info {
+.relay-info {
     display: inline-flex;
     justify-content: space-between;
 
     column-gap: 1em;
 }
 
-.info-group span {
+.relay-info__group span {
     color: #b9bbbe;
-    font-size: 0.9em;
+    font-size: 1em;
 }
 
-.info-group {
+.relay-info__group {
     display: inline-flex;
-    flex-direction: column;
     justify-content: space-between;
+    flex-direction: column;
 }
+
 </style>

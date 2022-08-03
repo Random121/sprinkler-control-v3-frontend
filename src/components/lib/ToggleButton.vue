@@ -1,19 +1,20 @@
 <template>
-    <label class="toggle-container">
+    <label class="toggle">
         <input
             type="checkbox"
-            class="toggle-checkbox"
+            class="toggle__checkbox"
             :disabled="disabled"
             v-model="isOn"
             v-bind="$attrs"
             @change="sendUpdates($event)"
         />
-        <span class="toggle-slider"></span>
+        <span class="toggle__slider"></span>
     </label>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { toREM } from "@/utils/style";
 
 interface Props {
     width?: number;
@@ -24,11 +25,11 @@ interface Props {
     offHexColor?: string;
 
     toggleSpeed?: number;
-    disabled?: boolean;
 
     borderWidth?: number;
     borderHexColor?: string;
 
+    disabled?: boolean;
     modelValue?: boolean;
 }
 
@@ -38,36 +39,30 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    width: 50,
-    height: 25,
-    handleMargin: 2,
+    width: 50 / 14,
+    height: 25 / 14,
+    handleMargin: 2 / 14,
 
     onHexColor: "#558b2f",
     offHexColor: "#df362d",
 
     toggleSpeed: 0.15,
-    disabled: false,
 
     borderWidth: 0,
     borderHexColor: "#d3d3d3",
 
+    disabled: false,
     modelValue: false,
 });
 
 const emit = defineEmits<Emits>();
-
-//
-// Logic values
-//
 
 const isOn = ref(props.modelValue);
 
 // parent to child binding
 watch(
     () => props.modelValue,
-    (newIsOn) => {
-        isOn.value = newIsOn;
-    }
+    (newIsOn) => (isOn.value = newIsOn)
 );
 
 function sendUpdates(event: Event) {
@@ -81,28 +76,24 @@ function sendUpdates(event: Event) {
 }
 
 //
-// styling values
+// styling
 //
 
-function toPixels(value: number): string {
-    return `${value}px`;
-}
-
-// width and height of the slider excluding the border
+// width and height of slider excluding the border
 const contentWidth = computed(() => props.width - 2 * props.borderWidth);
-const contentHeight = computed(() => props.height - 2 * props.borderWidth);
+const contentheight = computed(() => props.height - 2 * props.borderWidth);
 
-const handleDiameter = computed(() => {
-    return toPixels(contentHeight.value - 2 * props.handleMargin);
-});
+const handleDiameter = computed(() =>
+    toREM(contentheight.value - 2 * props.handleMargin)
+);
 
-const handleTravelDistance = computed(() => {
-    return toPixels(contentWidth.value - contentHeight.value);
-});
+const handleTravelDistance = computed(() =>
+    toREM(contentWidth.value - contentheight.value)
+);
 </script>
 
 <style scoped>
-.toggle-container {
+.toggle {
     display: inline-block;
     position: relative;
 
@@ -111,15 +102,16 @@ const handleTravelDistance = computed(() => {
     cursor: v-bind("disabled ? 'not-allowed' : 'pointer'");
     user-select: none;
 
-    width: v-bind("toPixels(width)");
-    height: v-bind("toPixels(height)");
+    width: v-bind("toREM(width)");
+    height: v-bind("toREM(height)");
 }
 
-.toggle-checkbox {
+/* hide checkbox since we only need its toggle feature */
+.toggle__checkbox {
     display: none;
 }
 
-.toggle-slider {
+.toggle__slider {
     display: block;
     position: relative;
     box-sizing: border-box;
@@ -128,10 +120,10 @@ const handleTravelDistance = computed(() => {
     height: 100%;
 
     /* Make the toggle a rounded rectangle */
-    border-radius: v-bind("toPixels(height / 2)");
+    border-radius: v-bind("toREM(height / 2)");
 
-    /* allow a custom border around the toggle */
-    border: v-bind("toPixels(borderWidth)") solid v-bind("borderHexColor");
+    /* add custom border around the toggle */
+    border: v-bind("toREM(borderWidth)") solid v-bind("borderHexColor");
 
     background-color: v-bind("offHexColor");
 
@@ -139,12 +131,12 @@ const handleTravelDistance = computed(() => {
 }
 
 /* change color when activated */
-.toggle-checkbox:checked + .toggle-slider {
+.toggle__checkbox:checked + .toggle__slider {
     background-color: v-bind("onHexColor");
 }
 
 /* create the handle (moving circle) */
-.toggle-slider::before {
+.toggle__slider::before {
     content: "";
     position: absolute;
 
@@ -154,13 +146,14 @@ const handleTravelDistance = computed(() => {
     border-radius: 100%;
     background-color: white;
 
-    margin: v-bind("toPixels(handleMargin)");
+    margin: v-bind("toREM(handleMargin)");
 
     transition: transform v-bind("`${toggleSpeed}s`");
 }
 
 /* move handle when activated */
-.toggle-checkbox:checked + .toggle-slider::before {
+.toggle__checkbox:checked + .toggle__slider::before {
     transform: translateX(v-bind("handleTravelDistance"));
 }
+
 </style>

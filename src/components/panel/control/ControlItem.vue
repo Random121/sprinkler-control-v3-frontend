@@ -1,33 +1,33 @@
 <template>
-    <div class="control-container">
-        <RelayInfo :info="relayInfo"></RelayInfo>
+    <div class="control">
+        <InformationDisplay :relay-info="relayInfo"></InformationDisplay>
         <TextInput
             placeholder="Input Duration (minutes)"
             v-model="inputDuration"
             :disabled="inputDisabled"
         ></TextInput>
-        <ToggleSwitch
+        <ToggleButton
             v-model="toggleIsOn"
             @change="toggleChange"
-        ></ToggleSwitch>
+        ></ToggleButton>
     </div>
 </template>
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
 
-import TextInput from "./TextInput.vue";
-import ToggleSwitch from "./ToggleSwitch.vue";
-import RelayInfo from "./RelayInfo.vue";
+import InformationDisplay from "./InformationDisplay.vue";
+import ToggleButton from "@/components/lib/ToggleButton.vue";
+import TextInput from "@/components/lib/TextInput.vue";
 
-import type { IRelayInfo } from "@/app.types";
+import type { RelayInformation } from "@/types/relay.types";
 
 interface Props {
-    relayInfo: IRelayInfo;
+    relayInfo: RelayInformation;
 }
 
 interface Emits {
-    (emit: "change", id: string, activeState: boolean, duration?: number): void;
+    (emit: "change", id: string, isActive: boolean, duration?: number): void;
 }
 
 const props = defineProps<Props>();
@@ -37,17 +37,19 @@ const toggleIsOn = ref(props.relayInfo.state.is_active);
 
 watch(
     () => props.relayInfo.state.is_active,
-    (newIsActive) => {
-        toggleIsOn.value = newIsActive;
-    }
+    (newIsActive) => (toggleIsOn.value = newIsActive)
 );
 
 const inputDuration = ref("");
 const inputDisabled = ref(toggleIsOn);
 
-function toggleChange(isOn: boolean) {
+function toggleChange(isOn: boolean): void {
+    let duration: number | undefined = undefined;
+
     if (isOn) {
-        const [valid, error, duration] = parseDuration(inputDuration.value);
+        const [valid, error, parsedDuration] = parseDuration(
+            inputDuration.value
+        );
 
         if (!valid) {
             nextTick(() => (toggleIsOn.value = false));
@@ -56,15 +58,10 @@ function toggleChange(isOn: boolean) {
             return;
         }
 
-        // make ts stop erroring
-        if (duration === null) {
-            return;
-        }
-
-        emit("change", props.relayInfo.id, isOn, duration);
-    } else {
-        emit("change", props.relayInfo.id, isOn, undefined);
+        duration = parsedDuration ?? undefined;
     }
+
+    emit("change", props.relayInfo.id, isOn, duration);
 }
 
 function parseDuration(
@@ -103,7 +100,10 @@ function isDurationValid(duration: string): [boolean, string | null] {
     }
 
     if (durationNumber > 10080) {
-        return [false, "Duration can't be longer than 10080 (one week)"];
+        return [
+            false,
+            "Duration can't be longer than 10080 minutes (one week)",
+        ];
     }
 
     return [true, null];
@@ -111,17 +111,27 @@ function isDurationValid(duration: string): [boolean, string | null] {
 </script>
 
 <style scoped>
-.control-container {
+.control {
     display: inline-flex;
     align-items: center;
     justify-content: center;
 
+    flex-flow: row wrap;
+
     column-gap: 3em;
+    row-gap: 1em;
+
     padding: 1em;
 
     border: 1px solid orange;
     border-radius: 2px;
 
-    width: 37em;
+    max-width: 40em;
+}
+
+@media (min-width: 37em) {
+    .control {
+        width: 100%;
+    }
 }
 </style>
