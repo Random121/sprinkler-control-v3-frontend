@@ -58,9 +58,25 @@ watch(
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-flow: row wrap;
+
+    column-gap: 1.25em;
 }
 
-.input-group label {
+/* dont wrap the button and label group */
+.input-group {
+    flex-wrap: nowrap;
+}
+
+.input-group > label {
     color: white;
 }
+
+@media (max-width: 45em) {
+    .day-selector {
+        flex-flow: column wrap;
+        align-items: flex-start;
+    }
+}
+
 </style>

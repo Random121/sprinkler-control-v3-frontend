@@ -11,7 +11,7 @@
         <button
             class="clear-button"
             :disabled="disabled"
-            v-show="text.length > 0"
+            v-show="text.toString().length > 0"
             @click="clearText($event)"
         >
             <div class="clear-button__icon"></div>
@@ -36,11 +36,11 @@ interface Props {
     clearButtonMargin?: number;
 
     disabled?: boolean;
-    modelValue?: string;
+    modelValue?: string | number;
 }
 
 interface Emits {
-    (emit: "update:modelValue", value: string, event: Event): void;
+    (emit: "update:modelValue", value: string | number, event: Event): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
