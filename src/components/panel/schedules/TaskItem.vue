@@ -21,16 +21,16 @@
 
 <script setup lang="ts">
 import TextInput from "@/components/lib/TextInput.vue";
-import type { ScheduleTask } from "@/types/schedule.types.js";
+import type { EditableScheduleTask } from "@/types/schedule.types.js";
 import { ref, watch } from "vue";
 
 interface Props {
-    taskInfo: ScheduleTask;
+    taskInfo: EditableScheduleTask;
 }
 
 interface Emits {
     (emit: "delete"): void;
-    (emit: "change", taskInfo: ScheduleTask): void;
+    (emit: "change", taskInfo: EditableScheduleTask): void;
 }
 
 const props = defineProps<Props>();
@@ -41,13 +41,19 @@ const info = ref(props.taskInfo);
 // parent to child binding
 watch(
     () => props.taskInfo,
-    (newTaskInfo) => {
-        info.value = newTaskInfo;
-    }
+    (newTaskInfo) => (info.value = newTaskInfo)
 );
 
 // send updates whenever the user inputs
-watch(info, (newInfo: ScheduleTask) => emit("change", newInfo), { deep: true });
+watch(
+    info,
+    (newInfo: EditableScheduleTask) => {
+        emit("change", newInfo);
+    },
+    {
+        deep: true,
+    }
+);
 </script>
 
 <style scoped>

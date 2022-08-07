@@ -7,10 +7,11 @@
             <div class="input-group">
                 <input
                     type="checkbox"
+                    :id="dayName"
                     :value="dayNumber"
                     v-model="selectedDays"
                 />
-                <label>{{ dayName }}</label>
+                <label :for="dayName">{{ dayName }}</label>
             </div>
         </template>
     </div>

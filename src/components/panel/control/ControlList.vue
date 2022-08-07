@@ -17,13 +17,11 @@ import ControlItem from "./ControlItem.vue";
 
 import type { RelayInformation } from "@/types/relay.types";
 
-const RELAYS_API_ENDPOINT: string | undefined = inject("RELAYS_API_ENDPOINT");
-const UPDATE_SOCKETIO: Socket | undefined = inject("UPDATE_SOCKETIO_CLIENT");
+const RELAYS_API_ENDPOINT = inject<string>("RELAYS_API_ENDPOINT");
+const UPDATE_SOCKETIO = inject<Socket>("UPDATE_SOCKETIO_CLIENT");
 
 if (!RELAYS_API_ENDPOINT) {
-    alert(
-        "Failed to load relays API endpoint. The page will refresh in 3 seconds."
-    );
+    alert("Failed to get relays endpoint. Refreshing in 3 seconds.");
     setTimeout(() => window.location.reload(), 3000);
 }
 
@@ -35,10 +33,10 @@ function updateInformation(information: RelayInformation): void {
     });
 
     infoIndex !== -1
-        // replace old info
-        ? (relayInformation.value[infoIndex] = information)
-        // add new info
-        : relayInformation.value.push(information);
+        ? // replace old info
+          (relayInformation.value[infoIndex] = information)
+        : // add new info
+          relayInformation.value.push(information);
 }
 
 if (UPDATE_SOCKETIO) {
@@ -86,10 +84,8 @@ function sendRequest(id: string, activeState: boolean, duration?: number) {
         },
     };
 
-    postData(url, data)
-        .catch((err) => console.error(err));
+    postData(url, data).catch((err) => console.error(err));
 }
-
 </script>
 
 <style scoped>

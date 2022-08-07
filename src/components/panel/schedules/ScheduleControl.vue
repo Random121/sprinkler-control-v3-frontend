@@ -1,56 +1,251 @@
 <template>
     <div class="schedule-control">
-        <div class="schedule-editor">
-            <select class="schedule-editor__dropdown">
-                <option>Schedule 1</option>
-                <option>Schedule 2</option>
+        <div class="editor">
+            <select class="editor__dropdown" v-model="selectedId">
+                <option disabled value="">Select a schedule</option>
+                <option
+                    v-for="schedule in allSchedules"
+                    :key="schedule._id"
+                    :value="schedule._id"
+                >
+                    {{ schedule.name }}
+                </option>
             </select>
-            <button class="schedule-editor__delete-button">Delete</button>
-            <button class="schedule-editor__new-button">New</button>
+            <template
+                v-if="selectedId === '' && selectedSchedule !== undefined"
+            >
+                <button @click="saveNewSchedule">Save New Schedule</button>
+                <button @click="deleteNewSchedule">Delete New Schedule</button>
+            </template>
+            <template v-else>
+                <button @click="deleteUpdate">Delete</button>
+                <button @click="addSchedule">New</button>
+            </template>
         </div>
-        <div class="schedule-settings">
-            <div class="schedule-settings__active-toggle">
+        <div class="settings" v-show="selectedSchedule !== undefined">
+            <div class="settings__active-toggle">
                 <span>Active:</span>
-                <ToggleButton id="test"></ToggleButton>
+                <ToggleButton
+                    id="test"
+                    v-model="scheduleActive"
+                    @change="sendSettingsUpdate"
+                ></ToggleButton>
             </div>
-            <div class="schedule-settings__day-selector">
+            <div class="settings__day-selector">
                 <span>Active Days</span>
-                <DaySelector></DaySelector>
+                <DaySelector
+                    v-model="scheduleDays"
+                    @change="sendSettingsUpdate"
+                ></DaySelector>
             </div>
         </div>
-        <TaskEditor :tasks="TEST" @save="taskSaved"></TaskEditor>
+        <TaskEditor
+            v-show="selectedSchedule !== undefined"
+            :tasks="scheduleTasks"
+            @save="sendTaskUpdate"
+        ></TaskEditor>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { inject, ref, watch } from "vue";
 
 import DaySelector from "./DaySelector.vue";
-import ToggleButton from "../../lib/ToggleButton.vue";
+import ToggleButton from "@/components/lib/ToggleButton.vue";
 import TaskEditor from "./TaskEditor.vue";
-import type { ScheduleTask } from "@/types/schedule.types";
 
-const TEST = ref([
-    {
-        id: "GPIO_1",
-        start: "00:00:00",
-        duration: 10,
-    },
-    {
-        id: "GPIO_2",
-        start: "00:10:00",
-        duration: 30,
-    }
-]);
+import { ScheduleApiClient } from "@/utils/ScheduleApiClient";
+import type {
+    Schedule,
+    ScheduleTask,
+    EditableSchedule,
+} from "@/types/schedule.types";
 
-function taskSaved(tasks: ScheduleTask[]) {
-    console.log(tasks);
+const SCHEDULES_API_ENDPOINT = inject<string>("SCHEDULES_API_ENDPOINT");
+
+if (!SCHEDULES_API_ENDPOINT) {
+    alert("Failed to get schedules endpoint. Refreshing in 3 seconds.");
+    setTimeout(() => window.location.reload(), 3000);
 }
 
+const apiClient = new ScheduleApiClient(SCHEDULES_API_ENDPOINT as string);
+
+let editingNewSchedule = false;
+
+const allSchedules = ref<Schedule[]>([]);
+const selectedId = ref<string>("");
+const selectedSchedule = ref<EditableSchedule>();
+
+const scheduleActive = ref<boolean>(false);
+const scheduleDays = ref<number[]>([]);
+const scheduleTasks = ref<ScheduleTask[]>([]);
+
+watch(selectedId, () => {
+    if (editingNewSchedule) {
+        return;
+    }
+
+    const schedule = allSchedules.value?.find(
+        (s) => s._id === selectedId.value
+    );
+
+    if (!schedule) {
+        selectedSchedule.value = undefined;
+        return;
+    }
+
+    // clone the schedule and remove _id
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, ...scheduleCopy } = schedule;
+
+    scheduleActive.value = scheduleCopy.active;
+    scheduleDays.value = scheduleCopy.days;
+    scheduleTasks.value = scheduleCopy.tasks;
+
+    selectedSchedule.value = scheduleCopy;
+});
+
+function updateScheduleStore() {
+    apiClient
+        .getSchedules()
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Request returned an error");
+            }
+            return response.json();
+        })
+        .then((schedules) => (allSchedules.value = schedules))
+        .catch((err) => {
+            console.log(err);
+            alert("Failed to get schedules. Refreshing in 3 seconds.");
+            setTimeout(() => window.location.reload(), 3000);
+        });
+}
+
+function deleteUpdate() {
+    const wantDelete = confirm("Do you want to delete this schedule?");
+
+    if (!wantDelete) {
+        return;
+    }
+
+    apiClient
+        .deleteSchedule(selectedId.value)
+        .then(() => {
+            selectedId.value = "";
+            selectedSchedule.value = undefined;
+            updateScheduleStore();
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to delete schedule.");
+        });
+}
+
+function sendSettingsUpdate() {
+    if (!selectedSchedule.value) {
+        return;
+    }
+
+    selectedSchedule.value.active = scheduleActive.value;
+    selectedSchedule.value.days = scheduleDays.value;
+
+    if (!editingNewSchedule) {
+        apiClient
+            .updateSchedule(selectedId.value, selectedSchedule.value)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Request returned an error");
+                }
+                updateScheduleStore();
+            })
+            .catch((err) => {
+                console.error(err);
+                alert("Failed to save settings.");
+            });
+    }
+}
+
+function sendTaskUpdate(savedTasks: ScheduleTask[]) {
+    if (!selectedSchedule.value) {
+        return;
+    }
+
+    selectedSchedule.value.tasks = savedTasks;
+
+    alert("Saving schedule tasks");
+
+    if (!editingNewSchedule) {
+        apiClient
+            .updateSchedule(selectedId.value, selectedSchedule.value)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Request returned an error");
+                }
+                updateScheduleStore();
+            })
+            .catch((err) => {
+                console.error(err);
+                alert("Failed to save tasks.");
+            });
+    }
+}
+
+function addSchedule() {
+    selectedId.value = "";
+
+    const scheduleName = prompt("Enter a schedule name:");
+
+    if (!scheduleName) {
+        return;
+    }
+
+    editingNewSchedule = true;
+
+    selectedSchedule.value = {
+        name: scheduleName,
+        active: false,
+        days: [],
+        tasks: [],
+    };
+
+    scheduleActive.value = false;
+    scheduleDays.value = [];
+    scheduleTasks.value = [];
+}
+
+function saveNewSchedule() {
+    if (!selectedSchedule.value) {
+        return;
+    }
+
+    editingNewSchedule = false;
+
+    apiClient
+        .addSchedule(selectedSchedule.value)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Request returned an error");
+            }
+            selectedId.value = "";
+            selectedSchedule.value = undefined;
+            updateScheduleStore();
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to add new schedule.");
+        });
+}
+
+function deleteNewSchedule() {
+    editingNewSchedule = false;
+    selectedSchedule.value = undefined;
+}
+
+updateScheduleStore();
 </script>
 
 <style scoped>
-
 .schedule-control {
     display: flex;
     flex-flow: column;
@@ -70,16 +265,16 @@ function taskSaved(tasks: ScheduleTask[]) {
     border-radius: 2px;
 }
 
-.schedule-editor {
+.editor {
     justify-content: space-evenly;
 
     row-gap: 0.5em;
     column-gap: 1.5em;
 
-    max-width: 20em;
+    max-width: 30em;
 }
 
-.schedule-settings {
+.settings {
     justify-content: flex-start;
 
     row-gap: 1.5em;
@@ -88,36 +283,32 @@ function taskSaved(tasks: ScheduleTask[]) {
     max-width: 44em;
 }
 
-.schedule-settings__active-toggle {
+.settings__active-toggle {
     display: flex;
     align-items: center;
 
     column-gap: 0.75em;
 }
 
-.schedule-settings__active-toggle > span {
+.settings__active-toggle > span {
     color: white;
     font-size: 1.1em;
 }
 
-.schedule-settings__day-selector {
+.settings__day-selector {
     display: flex;
     flex-direction: column;
 
     row-gap: 0.75em;
 }
 
-.schedule-settings__day-selector > span {
+.settings__day-selector > span {
     color: white;
     font-size: 1.1em;
 
     width: fit-content;
 
     border-bottom: 2px solid white;
-}
-
-.schedule-tasks {
-    max-width: fit-content;
 }
 
 @media (min-width: 45em) {

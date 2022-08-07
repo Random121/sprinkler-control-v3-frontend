@@ -1,10 +1,10 @@
 <template>
     <div class="task-editor">
         <div class="task-editor__control-buttons">
-            <button @click="pushNewTask">New Task</button>
+            <button @click="newTask">New Task</button>
             <button @click="saveTasks">Save</button>
         </div>
-        <div class="tasks" v-for="(task, index) in tasks" :key="index">
+        <div class="task-editor__tasks" v-for="(task, index) in tasks" :key="index">
             <TaskItem
                 :taskInfo="task"
                 @change="(newTask) => replaceTask(index, newTask)"
@@ -15,8 +15,9 @@
 </template>
 
 <script setup lang="ts">
-import type { ScheduleTask } from "@/types/schedule.types";
 import { ref, watch } from "vue";
+
+import type { EditableScheduleTask, ScheduleTask } from "@/types/schedule.types";
 import TaskItem from "./TaskItem.vue";
 
 interface Props {
@@ -30,14 +31,14 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const tasks = ref(props.tasks);
+const tasks = ref<EditableScheduleTask[]>(props.tasks);
 
 watch(
     () => props.tasks,
     (newTasks) => (tasks.value = newTasks)
 );
 
-function pushNewTask() {
+function newTask() {
     tasks.value.push({
         id: undefined,
         start: undefined,
@@ -45,18 +46,16 @@ function pushNewTask() {
     });
 }
 
-function replaceTask(taskIndex: number, newTask: ScheduleTask) {
+function replaceTask(taskIndex: number, newTask: EditableScheduleTask) {
     tasks.value[taskIndex] = newTask;
-    console.log(taskIndex, newTask);
 }
 
 function deleteTask(taskIndex: number) {
     tasks.value.splice(taskIndex, 1);
-    console.log(taskIndex);
 }
 
 const TIME_REGEX = /^(2[0-3]|[01]?[0-9]):([0-5]?[0-9])(:([0-5]?[0-9]))?$/;
-function isValidTask(task: ScheduleTask) {
+function checkValidTask(task: EditableScheduleTask) {
     if (task.id === undefined || task.id.length === 0) {
         return [false, "Task identifier must be specified."];
     }
@@ -86,8 +85,13 @@ function isValidTask(task: ScheduleTask) {
 }
 
 function saveTasks() {
+    if (tasks.value.length === 0) {
+        alert("Schedule must have at least one task.");
+        return;
+    }
+
     for (const task of tasks.value) {
-        const [valid, error] = isValidTask(task);
+        const [valid, error] = checkValidTask(task);
 
         if (!valid) {
             alert(error);
@@ -95,7 +99,9 @@ function saveTasks() {
         }
     }
 
-    emit("save", tasks.value);
+    // we can just cast to ScheduleTask[] since
+    // undefined values are accounted for
+    emit("save", (tasks.value as ScheduleTask[]));
 }
 
 </script>
@@ -116,7 +122,7 @@ function saveTasks() {
     column-gap: 1em;
 }
 
-.tasks {
+.task-editor__tasks {
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
