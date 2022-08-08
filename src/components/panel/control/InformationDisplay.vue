@@ -10,7 +10,7 @@
             <!-- relay information -->
             <div class="relay-info__group">
                 <span>Pin: {{ relayInfo.pin }}</span>
-                <span>ID: {{relayInfo.id }}</span>
+                <span>ID: {{ relayInfo.id }}</span>
             </div>
         </div>
     </div>
@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 
 import { DurationTimer } from "@/utils/DurationTimer.js";
 import type { RelayInformation } from "@/types/relay.types";
@@ -53,6 +53,12 @@ watch(
         durationTimer.setDuration(remaining);
     }
 );
+
+watchEffect(() => {
+    props.relayInfo.state.is_active
+        ? durationTimer.start()
+        : durationTimer.end();
+});
 
 function formatTime(seconds: number | null): string {
     const milliseconds = (seconds ?? 0) * 1000;
@@ -91,5 +97,4 @@ function formatTime(seconds: number | null): string {
     justify-content: space-between;
     flex-direction: column;
 }
-
 </style>

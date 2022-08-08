@@ -1,18 +1,18 @@
 <template>
     <div class="tab-item">
-        <a
-            :href="href"
+        <RouterLink
+            :to="to"
             v-bind="$attrs"
         >
             <slot></slot>
-        </a>
+        </RouterLink>
     </div>
 </template>
 
 <script setup lang="ts">
 
 interface Props {
-    href: string;
+    to: string | object;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -30,6 +30,10 @@ a {
 }
 
 a:hover {
+    color: orange;
+}
+
+.router-link-active {
     color: orange;
     border-bottom: 0.25rem solid orange;
 }

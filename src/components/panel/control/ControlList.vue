@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, type Ref } from "vue";
+import { inject, onUnmounted, ref } from "vue";
 import type { Socket } from "socket.io-client";
 
 import ControlItem from "./ControlItem.vue";
@@ -25,23 +25,11 @@ if (!RELAYS_API_ENDPOINT) {
     setTimeout(() => window.location.reload(), 3000);
 }
 
-const relayInformation: Ref<Array<RelayInformation>> = ref([]);
-
-function updateInformation(information: RelayInformation): void {
-    const infoIndex = relayInformation.value.findIndex((oldInfo) => {
-        return oldInfo.id === information.id;
-    });
-
-    infoIndex !== -1
-        ? // replace old info
-          (relayInformation.value[infoIndex] = information)
-        : // add new info
-          relayInformation.value.push(information);
-}
-
-if (UPDATE_SOCKETIO) {
+if (!UPDATE_SOCKETIO) {
+    alert("Failed to load SocketIO client. Refreshing in 3 seconds.");
+    setTimeout(() => window.location.reload(), 3000);
+} else {
     UPDATE_SOCKETIO.on("update", (newInfo: Array<RelayInformation>) => {
-        console.log(newInfo);
         for (const info of newInfo) {
             updateInformation(info);
         }
@@ -49,18 +37,37 @@ if (UPDATE_SOCKETIO) {
 
     UPDATE_SOCKETIO.on("disconnect", (msg) => {
         console.error(`[SOCKETIO] Disconnect: ${msg}`);
-        alert("Trying to reconnect to server. Please wait.");
+        alert("Trying to reconnect to server.");
     });
 
     UPDATE_SOCKETIO.io.on("reconnect_failed", () => {
         UPDATE_SOCKETIO.disconnect();
         alert("Could not reconnect to server. Please refresh the page.");
     });
-} else {
-    alert(
-        "Failed to load SocketIO client. The page will refresh in 3 seconds."
-    );
-    setTimeout(() => window.location.reload(), 3000);
+
+    // since state is lost when user switches to another tab
+    // we have to request the relay info
+    UPDATE_SOCKETIO.emit("request_update");
+}
+
+onUnmounted(() => {
+    // disable all listeners until
+    // next mount (when user switches to this tab)
+    UPDATE_SOCKETIO?.off();
+});
+
+const relayInformation = ref<RelayInformation[]>([]);
+
+function updateInformation(information: RelayInformation): void {
+    const infoIndex = relayInformation.value.findIndex((oldInfo) => {
+        return oldInfo.id === information.id;
+    });
+
+    infoIndex !== -1
+        // replace old info
+        ? (relayInformation.value[infoIndex] = information)
+        // add new info
+        : relayInformation.value.push(information);
 }
 
 async function postData(url: string, data: object) {
@@ -86,6 +93,7 @@ function sendRequest(id: string, activeState: boolean, duration?: number) {
 
     postData(url, data).catch((err) => console.error(err));
 }
+
 </script>
 
 <style scoped>

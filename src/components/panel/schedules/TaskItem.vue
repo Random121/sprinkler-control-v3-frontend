@@ -3,26 +3,30 @@
         <TextInput
             class="task__relay-id"
             placeholder="Relay ID"
-            v-model="info.id"
+            v-model="relayId"
+            @change="sendUpdate"
         ></TextInput>
         <TextInput
             class="task__start-time"
             placeholder="Start Time (HH:mm:ss)"
-            v-model="info.start"
+            v-model="startTime"
+            @change="sendUpdate"
         ></TextInput>
         <TextInput
             class="task__duration"
             placeholder="Duration (minutes)"
-            v-model.number="info.duration"
+            v-model.number="duration"
+            @change="sendUpdate"
         ></TextInput>
         <button @click="$emit('delete')">Delete</button>
     </div>
 </template>
 
 <script setup lang="ts">
+import { ref, watch, computed } from "vue";
+
 import TextInput from "@/components/lib/TextInput.vue";
-import type { EditableScheduleTask } from "@/types/schedule.types.js";
-import { ref, watch } from "vue";
+import type { EditableScheduleTask } from "@/types/schedule.types";
 
 interface Props {
     taskInfo: EditableScheduleTask;
@@ -36,24 +40,44 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-const info = ref(props.taskInfo);
+const relayId = ref(props.taskInfo.id);
+const startTime = ref(props.taskInfo.start);
+
+const internalDuration = ref(props.taskInfo.duration);
+const duration = computed<number | undefined>({
+    get() {
+        return internalDuration.value !== undefined
+            ? internalDuration.value / 60
+            : internalDuration.value;
+    },
+    set(newDuration) {
+        internalDuration.value =
+            newDuration !== undefined ? newDuration * 60 : newDuration;
+    },
+});
+
+const taskInfo = computed<EditableScheduleTask>(() => {
+    return {
+        id: relayId.value,
+        start: startTime.value,
+        duration: internalDuration.value,
+    };
+});
 
 // parent to child binding
 watch(
     () => props.taskInfo,
-    (newTaskInfo) => (info.value = newTaskInfo)
+    (newTaskInfo) => {
+        relayId.value = newTaskInfo.id;
+        startTime.value = newTaskInfo.start;
+        internalDuration.value = newTaskInfo.duration;
+    }
 );
 
 // send updates whenever the user inputs
-watch(
-    info,
-    (newInfo: EditableScheduleTask) => {
-        emit("change", newInfo);
-    },
-    {
-        deep: true,
-    }
-);
+function sendUpdate() {
+    emit("change", taskInfo.value);
+}
 </script>
 
 <style scoped>

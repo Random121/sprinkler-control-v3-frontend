@@ -4,7 +4,11 @@
             <button @click="newTask">New Task</button>
             <button @click="saveTasks">Save</button>
         </div>
-        <div class="task-editor__tasks" v-for="(task, index) in tasks" :key="index">
+        <div
+            class="task-editor__tasks"
+            v-for="(task, index) in tasks"
+            :key="index"
+        >
             <TaskItem
                 :taskInfo="task"
                 @change="(newTask) => replaceTask(index, newTask)"
@@ -17,7 +21,10 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-import type { EditableScheduleTask, ScheduleTask } from "@/types/schedule.types";
+import type {
+    EditableScheduleTask,
+    ScheduleTask,
+} from "@/types/schedule.types";
 import TaskItem from "./TaskItem.vue";
 
 interface Props {
@@ -69,8 +76,10 @@ function checkValidTask(task: EditableScheduleTask) {
     }
 
     if (!TIME_REGEX.test(task.start)) {
-        console.log(task.start);
-        return [false, "Task start time must be in HH:mm:ss format (seconds are optional)."];
+        return [
+            false,
+            "Task start time must be in HH:mm:ss format (seconds are optional).",
+        ];
     }
 
     if (task.duration <= 0) {
@@ -78,7 +87,10 @@ function checkValidTask(task: EditableScheduleTask) {
     }
 
     if (task.duration > 10080) {
-        return [false, "Task duration must be smaller than 10080 minutes (1 week)."];
+        return [
+            false,
+            "Task duration must be smaller than 10080 minutes (1 week).",
+        ];
     }
 
     return [true, null];
@@ -101,9 +113,8 @@ function saveTasks() {
 
     // we can just cast to ScheduleTask[] since
     // undefined values are accounted for
-    emit("save", (tasks.value as ScheduleTask[]));
+    emit("save", tasks.value as ScheduleTask[]);
 }
-
 </script>
 
 <style scoped>
