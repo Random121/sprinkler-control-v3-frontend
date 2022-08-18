@@ -4,8 +4,8 @@ import { io as SocketIOClient } from "socket.io-client";
 import { router } from "./router";
 import App from "./App.vue";
 
-const SERVER_HOST = `http://192.168.0.27:42488`;
-// const SERVER_HOST = `http://${document.getElementById("info")?.dataset.host}:42488`;
+// const SERVER_HOST = `http://192.168.0.27:42488`;
+const SERVER_HOST = `http://${document.getElementById("info")?.dataset.host}:42488`;
 
 const API_VERSION = "v1";
 const SOCKETIO_VERSION = "v1";

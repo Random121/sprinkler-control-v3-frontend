@@ -173,8 +173,6 @@ function sendTaskUpdate(savedTasks: ScheduleTask[]) {
 
     selectedSchedule.value.tasks = savedTasks;
 
-    alert("Saving schedule tasks");
-
     if (!editingNewSchedule) {
         apiClient
             .updateSchedule(selectedId.value, selectedSchedule.value)

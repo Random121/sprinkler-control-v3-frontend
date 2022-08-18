@@ -1,7 +1,7 @@
 <template>
     <div class="day-selector">
         <template
-            v-for="(dayNumber, dayName) in DAY_TO_NUM_MAPPING"
+            v-for="(dayName, dayNumber) in DAYS_OF_WEEK"
             :key="dayName"
         >
             <div class="input-group">
@@ -20,15 +20,15 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-const DAY_TO_NUM_MAPPING = {
-    Sunday: 0,
-    Monday: 1,
-    Tuesday: 2,
-    Wednesday: 3,
-    Thursday: 4,
-    Friday: 5,
-    Saturday: 6,
-};
+const DAYS_OF_WEEK = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+];
 
 interface Props {
     modelValue?: number[];
