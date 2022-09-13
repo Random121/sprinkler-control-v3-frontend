@@ -21,7 +21,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { computed, ref, watch, watchEffect } from "vue";
 
-import { DurationTimer } from "@/utils/DurationTimer.js";
+import { DurationTimer } from "@/utils/DurationTimer";
 import type { RelayInformation } from "@/types/relay.types";
 
 dayjs.extend(duration);

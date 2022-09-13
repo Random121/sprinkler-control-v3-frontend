@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { toREM } from "@/utils/style.js";
+import { toREM } from "@/utils/style";
 
 interface Props {
     width?: number;
