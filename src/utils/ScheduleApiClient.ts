@@ -33,6 +33,12 @@ export class ScheduleApiClient {
         });
     }
 
+    setScheduleActiveState(id: string, state: boolean) {
+        return fetch(`${this.endpoint}/active/${id}`, {
+            method: state ? "PUT" : "DELETE",
+        });
+    }
+
     getSchedules(onlyActive = false) {
         const url = onlyActive
             ? `${this.endpoint}/active/`

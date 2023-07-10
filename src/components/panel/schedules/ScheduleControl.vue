@@ -1,7 +1,7 @@
 <template>
     <div class="schedule-control">
         <div class="editor">
-            <select class="editor__dropdown" v-model="selectedId">
+            <select class="editor__dropdown" v-model="selectedScheduleId">
                 <option disabled value="">Select a schedule</option>
                 <option
                     v-for="schedule in allSchedules"
@@ -12,7 +12,9 @@
                 </option>
             </select>
             <template
-                v-if="selectedId === '' && selectedSchedule !== undefined"
+                v-if="
+                    selectedScheduleId === '' && selectedSchedule !== undefined
+                "
             >
                 <button @click="saveNewSchedule">Save New Schedule</button>
                 <button @click="deleteNewSchedule">Delete New Schedule</button>
@@ -26,9 +28,8 @@
             <div class="settings__active-toggle">
                 <span>Active:</span>
                 <ToggleButton
-                    id="test"
                     v-model="scheduleActive"
-                    @change="sendSettingsUpdate"
+                    @change="sendScheduleActiveStateUpdate"
                 ></ToggleButton>
             </div>
             <div class="settings__day-selector">
@@ -68,25 +69,25 @@ if (!SCHEDULES_API_ENDPOINT) {
     setTimeout(() => window.location.reload(), 3000);
 }
 
-const apiClient = new ScheduleApiClient(SCHEDULES_API_ENDPOINT as string);
+const scheduleApi = new ScheduleApiClient(SCHEDULES_API_ENDPOINT as string);
 
 let editingNewSchedule = false;
 
 const allSchedules = ref<Schedule[]>([]);
-const selectedId = ref<string>("");
+const selectedScheduleId = ref<string>("");
 const selectedSchedule = ref<EditableSchedule>();
 
 const scheduleActive = ref<boolean>(false);
 const scheduleDays = ref<number[]>([]);
 const scheduleTasks = ref<ScheduleTask[]>([]);
 
-watch(selectedId, () => {
+watch(selectedScheduleId, () => {
     if (editingNewSchedule) {
         return;
     }
 
     const schedule = allSchedules.value?.find(
-        (s) => s._id === selectedId.value
+        (s) => s._id === selectedScheduleId.value
     );
 
     if (!schedule) {
@@ -106,11 +107,11 @@ watch(selectedId, () => {
 });
 
 function updateScheduleStore() {
-    apiClient
+    scheduleApi
         .getSchedules()
         .then((response) => {
             if (!response.ok) {
-                throw new Error("Request returned an error");
+                throw new Error("Get schedules request failed");
             }
             return response.json();
         })
@@ -129,10 +130,10 @@ function deleteUpdate() {
         return;
     }
 
-    apiClient
-        .deleteSchedule(selectedId.value)
+    scheduleApi
+        .deleteSchedule(selectedScheduleId.value)
         .then(() => {
-            selectedId.value = "";
+            selectedScheduleId.value = "";
             selectedSchedule.value = undefined;
             updateScheduleStore();
         })
@@ -147,23 +148,49 @@ function sendSettingsUpdate() {
         return;
     }
 
-    selectedSchedule.value.active = scheduleActive.value;
     selectedSchedule.value.days = scheduleDays.value;
 
-    if (!editingNewSchedule) {
-        apiClient
-            .updateSchedule(selectedId.value, selectedSchedule.value)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Request returned an error");
-                }
-                updateScheduleStore();
-            })
-            .catch((err) => {
-                console.error(err);
-                alert("Failed to save settings.");
-            });
+    if (editingNewSchedule) {
+        return;
     }
+
+    scheduleApi
+        .updateSchedule(selectedScheduleId.value, selectedSchedule.value)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Send settings request failed");
+            }
+            updateScheduleStore();
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to save settings.");
+        });
+}
+
+function sendScheduleActiveStateUpdate() {
+    if (!selectedSchedule.value) {
+        return;
+    }
+
+    selectedSchedule.value.active = scheduleActive.value;
+
+    if (editingNewSchedule) {
+        return;
+    }
+
+    scheduleApi
+        .setScheduleActiveState(selectedScheduleId.value, scheduleActive.value)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Send schedule active state request failed");
+            }
+            updateScheduleStore();
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to set schedule active state.");
+        });
 }
 
 function sendTaskUpdate(savedTasks: ScheduleTask[]) {
@@ -173,24 +200,26 @@ function sendTaskUpdate(savedTasks: ScheduleTask[]) {
 
     selectedSchedule.value.tasks = savedTasks;
 
-    if (!editingNewSchedule) {
-        apiClient
-            .updateSchedule(selectedId.value, selectedSchedule.value)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Request returned an error");
-                }
-                updateScheduleStore();
-            })
-            .catch((err) => {
-                console.error(err);
-                alert("Failed to save tasks.");
-            });
+    if (editingNewSchedule) {
+        return;
     }
+
+    scheduleApi
+        .updateSchedule(selectedScheduleId.value, selectedSchedule.value)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Send task request failed");
+            }
+            updateScheduleStore();
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to save tasks.");
+        });
 }
 
 function addSchedule() {
-    selectedId.value = "";
+    selectedScheduleId.value = "";
 
     const scheduleName = prompt("Enter a schedule name:");
 
@@ -219,13 +248,13 @@ function saveNewSchedule() {
 
     editingNewSchedule = false;
 
-    apiClient
+    scheduleApi
         .addSchedule(selectedSchedule.value)
         .then((response) => {
             if (!response.ok) {
-                throw new Error("Request returned an error");
+                throw new Error("Save new schedule request failed");
             }
-            selectedId.value = "";
+            selectedScheduleId.value = "";
             selectedSchedule.value = undefined;
             updateScheduleStore();
         })
